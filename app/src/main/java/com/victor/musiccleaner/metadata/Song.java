@@ -12,11 +12,16 @@ public abstract class Song {
     public static String UNKNOWN_ARTIST = "Unknown Artist";
     public static String UNKNOWN_ALBUM  = "Unknown Album";
 
-
     protected File file;
 
     public static Song getSong(File f){
-        return null; //TODO
+        String name = f.getName();
+        if (name.endsWith(".mp3")) {
+            return new MP3(f);
+        } else if (name.endsWith(".flac")){
+            return new FLAC(f);
+        } else
+            return null;
     }
 
     public Song(File file) {

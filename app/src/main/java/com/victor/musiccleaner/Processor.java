@@ -13,8 +13,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,6 +36,11 @@ public class Processor {
         this.rootFolder = rootFolder;
         this.scannedSongs = scanSongs(rootFolder);
     }
+
+    public void tidyFolder(){
+        Map<File, Set<Song>> newFolders = getNewFolders();
+        move(newFolders);
+    }
     
 
 
@@ -49,25 +57,47 @@ public class Processor {
     }
 
     private Map<File, Set<Song>> getNewFolders(){
-        Map<File, >
-        return  null;
+        Map<File, List<Song>> folderToSongList = scannedSongs.stream()
+                .collect(Collectors.groupingBy(this::getCanonFolder));
+
+        Map<File, Set<Song>> newFolders = new HashMap<>();
+        File defaultFolder = new File(rootFolder, OTHERS);
+        for (File folder: folderToSongList.keySet()) {
+            List<Song> songs = folderToSongList.get(folder);
+            if (songs.size() > 1) {
+                newFolders.put(folder, new HashSet<>(songs));
+            } else {
+                newFolders.put(defaultFolder, new HashSet<>(songs));
+            }
+        }
+
+        return newFolders;
     }
 
-    private File getNewFolder(Song song){
+    /**
+     * Get the canonical folder of a song (Artist + Album).
+     * @param song
+     * @return
+     */
+    private File getCanonFolder(Song song){
         String folderName = OTHERS;
 
         try {
             Metadata metadata = song.retrieveMetadata();
             folderName = metadata.getFolderName();
         } catch (TagException e) {
-            LOGGER.log(Level.WARNING, "Cannot read song tag from file: " + song.getFile());
+            LOGGER.warning("Cannot read song tag from file: " + song.getFile());
         } catch (ReadOnlyFileException | CannotReadException | InvalidAudioFrameException | IOException e) {
-            LOGGER.log(Level.WARNING, "Cannot open file :" + song.getFile());
+            LOGGER.warning("Cannot open file :" + song.getFile());
         }
 
         return new File(rootFolder,folderName);
     }
 
+    /**
+     * Create folder if it doesn't exist
+     * @param folder
+     */
     private void createFolder(File folder){
         if (folder.mkdirs()) {
             LOGGER.log(Level.INFO, "Folder: " + folder + " created");
@@ -89,29 +119,37 @@ public class Processor {
         LOGGER.log(Level.INFO, "File: " + path + " moved to folder: " + folder);
     }
 
-    private static Set<Song> scanSongs (File folder){
-        return null; // TODO
+    /**
+     * Return all songs in a folder (recursive)
+     * @param folder
+     * @return
+     */
+    private static Set<Song> scanSongs(File folder){
+        return scanFiles(folder)
+                .stream()
+                .map(Song::getSong)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
-    private static Set<File> allMusicFilesR (File folder){
+    /**
+     * Return all files in a folder (recursive)
+     * @param folder
+     * @return
+     */
+    private static Set<File> scanFiles(File folder){
         File[] filesList = folder.listFiles();
-        Set<File> musicFiles = new HashSet<>();
+        Set<File> files = new HashSet<>();
 
         for (File f : filesList){
-            if (isMusicFile(f)) {
-                musicFiles.add(f);
-            }
-            if (f.isDirectory()){
-                musicFiles.addAll(allMusicFilesR(f));
+            if (f.isFile()) {
+                files.add(f);
+            } else if (f.isDirectory()){
+                files.addAll(scanFiles(f));
             }
         }
 
-        return musicFiles;
+        return files;
     }
 
-    private static boolean isMusicFile (File file){
-        String name = file.getName();
-        return file.isFile()
-                && (name.endsWith(".flac") || name.endsWith(".mp3"));
-    }
 }
