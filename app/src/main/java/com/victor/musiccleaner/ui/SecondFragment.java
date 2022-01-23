@@ -1,4 +1,4 @@
-package com.victor.musiccleaner;
+package com.victor.musiccleaner.ui;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
+import com.victor.musiccleaner.R;
 import com.victor.musiccleaner.databinding.FragmentSecondBinding;
 
 public class SecondFragment extends Fragment {

@@ -12,7 +12,12 @@ public abstract class Song {
     public static String UNKNOWN_ARTIST = "Unknown Artist";
     public static String UNKNOWN_ALBUM  = "Unknown Album";
 
+
     protected File file;
+
+    public static Song getSong(File f){
+        return null; //TODO
+    }
 
     public Song(File file) {
         this.file = file;
